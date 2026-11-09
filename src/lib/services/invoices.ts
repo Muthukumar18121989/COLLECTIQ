@@ -5,7 +5,7 @@ import { formatMoney, toCents } from "@/lib/money";
 import { PayPalApiError } from "@/lib/paypal/client";
 import { canonicalState, toPayPalCreatePayload } from "@/lib/paypal/mapper";
 import type { PayPalInvoice } from "@/lib/paypal/types";
-import { UniqueViolationError } from "@/lib/db/store";
+import { isUniqueViolation } from "@/lib/db/store";
 import type { CollectionPolicy, Invoice, InvoiceItem, PolicyStep, ReminderTone } from "@/lib/types";
 import { type InvoiceInput, invoiceInputSchema } from "@/lib/validation";
 import { type ServiceContext, ServiceError, recordActivity } from "./context";
@@ -408,7 +408,7 @@ export async function remindInvoice(ctx: ServiceContext, id: string, opts: Remin
       });
       taskId = t.id;
     } catch (e) {
-      if (e instanceof UniqueViolationError) {
+      if (isUniqueViolation(e)) {
         throw new ServiceError("A reminder for this invoice was already sent today.", 409, "duplicate_reminder");
       }
       throw e;

@@ -35,6 +35,13 @@ export class UniqueViolationError extends Error {
   }
 }
 
+/**
+ * Name-based checks: the bundler may load this module in more than one chunk,
+ * so `instanceof` can fail for errors thrown by a store created elsewhere.
+ */
+export const isUniqueViolation = (e: unknown): e is UniqueViolationError => (e as Error | null)?.name === "UniqueViolationError";
+export const isNotFound = (e: unknown): e is NotFoundError => (e as Error | null)?.name === "NotFoundError";
+
 export class NotFoundError extends Error {
   constructor(what: string) {
     super(`${what} not found`);

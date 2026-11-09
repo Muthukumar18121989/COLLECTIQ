@@ -2,7 +2,7 @@ import { reminderNote } from "@/lib/agent/default-policy";
 import { checkPermission, type Operation } from "@/lib/agent/permissions";
 import { COLLECTIBLE, evaluateInvoice } from "@/lib/agent/policy-engine";
 import { todayISO } from "@/lib/dates";
-import { UniqueViolationError } from "@/lib/db/store";
+import { isUniqueViolation } from "@/lib/db/store";
 import { formatMoney } from "@/lib/money";
 import { createApproval } from "@/lib/services/approvals";
 import { type ServiceContext, ServiceError, recordActivity } from "@/lib/services/context";
@@ -91,7 +91,7 @@ export async function runCollectionCycle(ctx: ServiceContext): Promise<CycleResu
           execution_status: "blocked",
         });
       } catch (e) {
-        if (!(e instanceof UniqueViolationError)) throw e;
+        if (!isUniqueViolation(e)) throw e;
       }
       r.blocked++;
       r.details.push({ invoice: invoice.invoice_number, outcome: "blocked", reason: perm.reason });
@@ -119,7 +119,7 @@ export async function runCollectionCycle(ctx: ServiceContext): Promise<CycleResu
             error: null,
           });
     } catch (e) {
-      if (e instanceof UniqueViolationError) {
+      if (isUniqueViolation(e)) {
         r.skipped++; // another run claimed it concurrently
         continue;
       }

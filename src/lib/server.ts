@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 import { DEFAULT_POLICY } from "@/lib/agent/default-policy";
 import { MemoryStore } from "@/lib/db/memory-store";
 import { seedDemoData } from "@/lib/db/seed";
-import { NotFoundError, type Store } from "@/lib/db/store";
+import { isNotFound, type Store } from "@/lib/db/store";
 import { SupabaseStore } from "@/lib/db/supabase-store";
 import { UserDb } from "@/lib/db/user-db";
 import { integrationModes } from "@/lib/env";
@@ -101,9 +101,13 @@ export function apiRoute<P = Record<string, string>>(
 }
 
 export function errorResponse(e: unknown) {
-  if (e instanceof ServiceError) return jsonError(e.message, e.status, e.code, e.details);
+  // Name-based check as well: classes can be duplicated across bundler chunks.
+  if (e instanceof ServiceError || (e as Error | null)?.name === "ServiceError") {
+    const s = e as ServiceError;
+    return jsonError(s.message, s.status, s.code, s.details);
+  }
   if (e instanceof ZodError) return jsonError(e.issues[0]?.message ?? "Invalid input", 422, "validation", e.issues);
-  if (e instanceof NotFoundError) return jsonError(e.message, 404, "not_found");
+  if (isNotFound(e)) return jsonError(e.message, 404, "not_found");
   if (e instanceof SyntaxError) return jsonError("Invalid JSON body", 400, "bad_json");
   log.error("api.unhandled", { error: (e as Error)?.message, stack: (e as Error)?.stack });
   return jsonError("Something went wrong on our side. Please try again.", 500, "internal");

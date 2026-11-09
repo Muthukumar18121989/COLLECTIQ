@@ -1,5 +1,5 @@
 import { UserDb } from "@/lib/db/user-db";
-import { type Store, UniqueViolationError } from "@/lib/db/store";
+import { type Store, isUniqueViolation } from "@/lib/db/store";
 import { log } from "@/lib/logger";
 import type { GatewayResolver } from "@/lib/paypal";
 import type { PayPalInvoice, WebhookEventBody } from "@/lib/paypal/types";
@@ -78,7 +78,7 @@ export async function processWebhook(input: {
       processed_at: null,
     });
   } catch (e) {
-    if (!(e instanceof UniqueViolationError)) throw e;
+    if (!isUniqueViolation(e)) throw e;
     const existing = await store.findOne("webhook_events", { paypal_event_id: event.id });
     if (!existing || ["processed", "ignored", "duplicate"].includes(existing.processing_status)) {
       return { httpStatus: 200, outcome: "duplicate", message: "Event already processed" };

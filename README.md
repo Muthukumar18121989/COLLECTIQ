@@ -49,7 +49,16 @@ A yellow banner at the top of every page shows which integrations are in demo mo
 
 Sandbox buyer accounts are created in the PayPal developer dashboard under **Testing tools → Sandbox accounts**. To see a payment flow end-to-end: send an invoice to the sandbox **personal** account's email, open the client payment link shown on the invoice page, log in as that sandbox buyer and pay. The verified webhook flips the invoice to Paid and stops all reminders.
 
-> Fill in your own sandbox buyer email here before submitting: `sb-xxxx@personal.example.com` (password is in your PayPal developer dashboard; do not commit real passwords).
+Sandbox accounts used for development (PayPal Sandbox only, no real money):
+
+| Role | Sandbox account | Country |
+|---|---|---|
+| Freelancer / merchant (invoicer) | `sb-47sxld53787979@business.example.com` | US |
+| Client / buyer (pays invoices) | `sb-4visu53811690@personal.example.com` | US |
+
+> **Use a US (or other Invoicing-enabled) sandbox business account.** Apps linked to India-registered sandbox accounts receive no Invoicing scope and every Invoicing call returns `403 NOT_AUTHORIZED`. Also tick **Invoicing** under the app's Features in the developer dashboard.
+
+Verified on 2026-11-09 against the PayPal Sandbox: connection test, invoice create + send (`INV2-QGDY-CTJX-47RJ-TL2B`, status `SENT`, recipient and invoicer URLs returned), reminder, canonical status refresh, and duplicate-reminder prevention.
 
 ## Scripts
 
