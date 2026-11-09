@@ -33,7 +33,15 @@ export async function runClaudeAgent(ctx: ServiceContext, history: ConversationM
   const client = new Anthropic({ apiKey: env.anthropic.apiKey });
   const profile = await ctx.db.profile();
   const messages: MessageParam[] = [
-    ...history.slice(-12).map((m) => ({ role: m.role, content: m.content }) as MessageParam),
+    // Assistant turns carry a note of the tools they actually ran, so Claude
+    // doesn't mistake its own earlier (real) actions for unverified claims.
+    ...history.slice(-12).map((m) => {
+      const note =
+        m.role === "assistant" && m.tool_calls.length
+          ? `\n\n[Backend record of this turn: ${m.tool_calls.map((t) => `${t.name} → ${t.result_summary}`).join("; ")}${m.approval_ids.length ? `; approval requests created: ${m.approval_ids.length}` : ""}]`
+          : "";
+      return { role: m.role, content: `${m.content}${note}` } as MessageParam;
+    }),
     { role: "user", content: message },
   ];
   const toolCalls: AgentReply["toolCalls"] = [];

@@ -27,7 +27,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: "list_invoices",
-    description: "List invoices with optional filters. Statuses: draft, sent, unpaid, partially_paid, paid, overdue, cancelled, refunded, open (any unpaid balance). due_within_days limits to invoices due between today and N days from now.",
+    description: "List invoices with optional filters. Statuses: draft, sent, unpaid, partially_paid, paid, overdue (any unpaid balance past its due date, including partially paid), cancelled, refunded, open (any unpaid balance). due_within_days limits to invoices due between today and N days from now.",
     input_schema: {
       type: "object",
       properties: {
@@ -148,6 +148,7 @@ export async function executeTool(ctx: ServiceContext, name: string, rawInput: u
       let invs = await ctx.db.list("invoices", undefined, { orderBy: "due_date" });
       const status = input.status ? String(input.status) : null;
       if (status === "open") invs = invs.filter((i) => ["sent", "unpaid", "partially_paid"].includes(i.status) && i.amount_due_cents > 0);
+      else if (status === "overdue") invs = invs.filter((i) => ["sent", "unpaid", "partially_paid"].includes(i.status) && i.amount_due_cents > 0 && i.due_date < today);
       else if (status) invs = invs.filter((i) => effectiveStatus(i, today) === status);
       if (input.client_id) invs = invs.filter((i) => i.client_id === input.client_id);
       if (typeof input.due_within_days === "number") {
