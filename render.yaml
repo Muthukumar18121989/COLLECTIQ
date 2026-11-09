@@ -1,0 +1,51 @@
+# Render Blueprint: web service + hourly collection cron job.
+# Set the secret env vars in the Render dashboard (sync: false keeps them out of this file).
+services:
+  - type: web
+    name: collectiq
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- -p $PORT
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5-5
+      - key: CRON_SECRET
+        generateValue: true
+      - key: APP_URL
+        sync: false
+
+  - type: cron
+    name: collectiq-collections
+    runtime: node
+    schedule: "0 * * * *"
+    buildCommand: "true"
+    startCommand: >-
+      curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/run-collections"
+    envVars:
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: collectiq
+          envVarKey: CRON_SECRET
+      - key: APP_URL
+        sync: false
